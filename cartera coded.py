@@ -9,14 +9,8 @@ from alpha_vantage.timeseries import TimeSeries as ts
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import rcParams
 from scipy.stats import linregress
 from scipy.optimize import minimize
-import random as rd
-
-# Arreglando el layout de los gráficos para que los labels del eje x (que tienen gran longitud)
-# queden propiamente puestos en la ventana de figura.
-rcParams.update({'figure.autolayout': True})
 
 # API key para utilizar alpha_vantage
 ts = ts(key='ZN5W0AUQ2LWX8JTD', output_format='pandas'); data = []
@@ -28,7 +22,7 @@ TSL = 0.04
 syms = ['DJI','ABBV','SLG','PNW','NEM','DIS','NVDA','RI.PA','DUK','LUV','PLD']
 
 # iteraciones
-iteraciones = 25
+iteraciones = 50
 
 # funcion para obtener la tabla de datos historicos diarios de los simbolos seleccionados
 # symbol es una lista de datos con los simbolos de las compañias en string y siendo el
@@ -143,7 +137,7 @@ def ratios(df):
     valores_relevantes.index = ratios_df.columns
     
     return (ratios_df,valores_relevantes)
-  
+   
 # Generando las tablas con los ratios      
 Ratios = ratios(Data)
 
@@ -186,10 +180,13 @@ def solver(it):
     # creando una tupla con todos los limites superiores e inferiores para cada variable 
     b = tuple([(0,1) for x in range(len(lst))])
     
+    # definiendo valores iniciales
+    x0 = [0.1 for x in range(len(Ratios[1])-1)]
+    
     # defininiendo la lista para generar las soluciones
     solutions = []
     
-    for i in range(0,it-1):
+    for i in range(it-1):
         
         # defininiendo la funcion objetivo (todas las variables a utilizar)
         # cada x con un numero es un porcentaje de la cartera a asignar a cada simbolo
@@ -204,18 +201,15 @@ def solver(it):
         def constraint1(x):
             return x[0] + x[1] + x[2] + x[3] + x[4] + x[5] + x[6] + x[7] + x[8] + x[9] - 1
         
+        # especificando el primer constraint
+        con1 = {'type': 'eq', 'fun': constraint1}
+        
         # definiendo el constraint del problema que determina los valores de las variables para cada rendimiento asignado
         def constraint2(x):
             return lst[0]*x[0] + lst[1]*x[1] + lst[2]*x[2] + lst[3]*x[3] + lst[4]*x[4] + lst[5]*x[5] + lst[6]*x[6] + lst[7]*x[7] + lst[8]*x[8] + lst[9]*x[9] - linspace[i]
-        
-        # indicando los parámetros del problema para el optimizador
-        con1 = {'type': 'eq', 'fun': constraint1}
         con2 = {'type': 'eq', 'fun': constraint2}
         
-        # definiendo valores iniciales, que no importan mucho realmente mientras se encuentren en el intervalo [0,1]
-        x0 = [rd.random() for x in range(len(Ratios[1])-1)]
-        
-        # utilizando el solver
+        # Utilizando el solver
         sol = minimize(objective_function,x0,method='SLSQP',bounds=b,constraints=[con1,con2])
         
         # agregando cada una de las solciones a una lista para imprimir como solución
@@ -234,9 +228,6 @@ solver_solution = solver(iteraciones)
 # siendo sol = solucion del solver
 def varianzaERP(dfcov, sol):
     
-    # inicializando la varianza en 0 para cada ciclo
-    var = 0
-    
     # seleccionando los datos de la solucion del solver eliminando la rentabilidad de la lista
     # ya que este elemento no se utilizará para los cálculos
     sol = [(x[1]**2).tolist() for x in sol]
@@ -249,11 +240,15 @@ def varianzaERP(dfcov, sol):
     # del valor de cada columna con el valor de cada uno de los porcentajes asignados a cada 
     # simbolo y luego insertandolo en una lista 
     for k in sol:
+        # inicializando la varianza en 0 para cada ciclo
+        var = 0
+        
         for col in dfcov:
             for d, elem in zip(k,dfcov[col]):
                 val = d*elem
                 var = val + var
         lista_var.append(var)
+        
     return lista_var
 
 # definiendo la varianza utilizando la función de varianzaE_RP
