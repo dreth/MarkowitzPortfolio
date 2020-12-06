@@ -13,7 +13,7 @@ from scipy.stats import linregress
 from scipy.optimize import minimize
 
 # API key para utilizar alpha_vantage
-ts = ts(key='ZN5W0AUQ2LWX8JTD', output_format='pandas'); data = []
+ts = ts(key='', output_format='pandas'); data = []
 
 # tasa libre de riesgo
 TSL = 0.04
@@ -22,7 +22,7 @@ TSL = 0.04
 syms = ['DJI','ABBV','SLG','PNW','NEM','DIS','NVDA','RI.PA','DUK','LUV','PLD']
 
 # iteraciones
-iteraciones = 50
+iteraciones = 15
 
 # funcion para obtener la tabla de datos historicos diarios de los simbolos seleccionados
 # symbol es una lista de datos con los simbolos de las compañias en string y siendo el
